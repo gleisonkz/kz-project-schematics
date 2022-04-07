@@ -13,6 +13,42 @@
         "$source": "argv",
         "index": 0
       }
+    },
+    "shouldCreateCoreLayer": {
+      "type": "boolean",
+      "description": "Include the core layer",
+      "x-prompt": "Should core layer be included?",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "shouldCreateSharedLayer": {
+      "type": "boolean",
+      "description": "Include the shared layer",
+      "x-prompt": "Should shared layer be included?",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "shouldCreateWidgetLayer": {
+      "type": "boolean",
+      "description": "Include the widget layer",
+      "x-prompt": "Should widget layer be included?",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "shouldCreateDomainLayer": {
+      "type": "boolean",
+      "description": "Include the domain layer",
+      "x-prompt": "Should domain layer be included?",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
     }
   }
 }

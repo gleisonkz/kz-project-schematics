@@ -1,25 +1,91 @@
 import { strings } from '@angular-devkit/core';
 import {
-    apply, chain, externalSchematic, MergeStrategy, mergeWith, Rule, SchematicContext,
+    apply, chain, externalSchematic, MergeStrategy, mergeWith, move, Rule, SchematicContext,
     SchematicsException, template, Tree, url
 } from '@angular-devkit/schematics';
 
-interface CLIOptions {
+interface SchemaOptions {
   name: string;
+  shouldCreateCoreLayer: boolean;
+  shouldCreateDomainLayer: boolean;
+  shouldCreateWidgetLayer: boolean;
+  shouldCreateSharedLayer: boolean;
 }
 
-export function kzProject(_options: CLIOptions): Rule {
-  const name = _options.name;
-
+export function kzProject(schemaOptions: SchemaOptions): Rule {
   return (tree: Tree, _context: SchematicContext) => {
-    const templateSource = apply(url("./files"), [template({ ..._options, ...strings })]);
-    const merged = mergeWith(templateSource, MergeStrategy.Overwrite);
-    const rule = chain([runNgNew(name), merged, updateTsConfig(name)]);
+    const afterNgNewRule = chain([
+      createSassLayer(schemaOptions),
+      createCoreLayer(schemaOptions),
+      createSharedLayer(schemaOptions),
+      createWidgetLayer(schemaOptions),
+      createDomainLayer(schemaOptions),
+    ]);
 
-    return rule(tree, _context) as Rule;
+    const rule = chain([
+      runNgNewSchematics(schemaOptions),
+      afterNgNewRule,
+      updateTsConfig(schemaOptions),
+    ]);
+
+    return rule(tree, _context);
   };
 }
-function runNgNew(name: any) {
+
+function createSassLayer({ name }: SchemaOptions) {
+  return (_: Tree, _context: SchematicContext) => {
+    const templateSource = apply(url("./files/sass"), [
+      template({ ...strings, name }),
+      move(`${name}/src/sass`),
+    ]);
+
+    return mergeWith(templateSource, MergeStrategy.Overwrite);
+  };
+}
+
+function createCoreLayer({ name, shouldCreateCoreLayer }: SchemaOptions) {
+  return (tree: Tree, _context: SchematicContext) => {
+    if (shouldCreateCoreLayer) {
+      tree.create(`${name}/src/app/core/.gitkeep`, "");
+    }
+  };
+}
+
+function createDomainLayer({ name, shouldCreateDomainLayer }: SchemaOptions) {
+  return (tree: Tree, _context: SchematicContext) => {
+    if (shouldCreateDomainLayer) {
+      tree.create(`${name}/src/app/domain/.gitkeep`, "");
+    }
+  };
+}
+
+function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
+  return (_: Tree, _context: SchematicContext) => {
+    if (shouldCreateWidgetLayer) {
+      const templateSource = apply(url("./files/widget"), [
+        template({ ...strings, name }),
+        move(`${name}/src/app/widget`),
+      ]);
+
+      return mergeWith(templateSource, MergeStrategy.Overwrite);
+    }
+  };
+}
+
+function createSharedLayer({ name, shouldCreateSharedLayer }: SchemaOptions) {
+  return (_: Tree, _context: SchematicContext) => {
+    if (shouldCreateSharedLayer) {
+      const templateSource = apply(url("./files/shared"), [
+        template({ ...strings, name }),
+        move(`${name}/src/app/shared`),
+      ]);
+
+      return mergeWith(templateSource, MergeStrategy.Overwrite);
+    }
+  };
+}
+
+function runNgNewSchematics({ name }: SchemaOptions) {
   return externalSchematic("@schematics/angular", "ng-new", {
     name,
     version: "13.3.2",
@@ -31,7 +97,14 @@ function runNgNew(name: any) {
   });
 }
 
-function updateTsConfig(name: string): Rule {
+function updateTsConfig(schemaOptions: SchemaOptions): Rule {
+  const {
+    name,
+    shouldCreateCoreLayer,
+    shouldCreateDomainLayer,
+    shouldCreateSharedLayer,
+    shouldCreateWidgetLayer,
+  } = schemaOptions;
   return (tree: Tree, _context: SchematicContext) => {
     const tsConfigPath = `${name}/tsconfig.json`;
     const tsConfigFile = tree.read(tsConfigPath);
@@ -52,17 +125,37 @@ function updateTsConfig(name: string): Rule {
 
     tsConfig.compilerOptions.paths = {
       ...tsConfig.compilerOptions.paths,
-      [`@${APP_PREFIX}/core`]: [`${name}/src/app/core`],
-      [`@${APP_PREFIX}/domain`]: [`${name}/src/app/domain`],
-      [`@${APP_PREFIX}/shared`]: [`${name}/src/app/shared`],
-      [`@${APP_PREFIX}/widget/components`]: [`${name}/src/app/widget/components`],
-      [`@${APP_PREFIX}/widget/directives`]: [`${name}/src/app/widget/directives`],
-      [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
+      ...(shouldCreateCoreLayer
+        ? {
+            [`@${APP_PREFIX}/core`]: [`${name}/src/app/core`],
+          }
+        : {}),
+
+      ...(shouldCreateDomainLayer
+        ? {
+            [`@${APP_PREFIX}/domain`]: [`${name}/src/app/domain`],
+          }
+        : {}),
+
+      ...(shouldCreateSharedLayer
+        ? {
+            [`@${APP_PREFIX}/shared`]: [`${name}/src/app/shared`],
+          }
+        : {}),
+
+      ...(shouldCreateWidgetLayer
+        ? {
+            [`@${APP_PREFIX}/widget/components`]: [`${name}/src/app/widget/components`],
+            [`@${APP_PREFIX}/widget/directives`]: [`${name}/src/app/widget/directives`],
+            [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
+          }
+        : {}),
     };
 
     tsConfig.compilerOptions.strictPropertyInitialization = false;
 
     tree.overwrite(tsConfigPath, JSON.stringify(tsConfig, null, 2));
+
     return tree;
   };
 }
