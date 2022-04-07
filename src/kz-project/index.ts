@@ -123,33 +123,32 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
     const angularJson = JSON.parse(angularJsonFile!.toString());
     const APP_PREFIX = angularJson.projects[name].prefix;
 
+    const CORE_LAYER = shouldCreateCoreLayer
+      ? { [`@${APP_PREFIX}/core`]: [`${name}/src/app/core`] }
+      : {};
+
+    const DOMAIN_LAYER = shouldCreateDomainLayer
+      ? { [`@${APP_PREFIX}/domain`]: [`${name}/src/app/domain`] }
+      : {};
+
+    const SHARED_LAYER = shouldCreateSharedLayer
+      ? { [`@${APP_PREFIX}/shared`]: [`${name}/src/app/shared`] }
+      : {};
+
+    const WIDGET_LAYER = shouldCreateWidgetLayer
+      ? {
+          [`@${APP_PREFIX}/widget/components`]: [`${name}/src/app/widget/components`],
+          [`@${APP_PREFIX}/widget/directives`]: [`${name}/src/app/widget/directives`],
+          [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
+        }
+      : {};
+
     tsConfig.compilerOptions.paths = {
       ...tsConfig.compilerOptions.paths,
-      ...(shouldCreateCoreLayer
-        ? {
-            [`@${APP_PREFIX}/core`]: [`${name}/src/app/core`],
-          }
-        : {}),
-
-      ...(shouldCreateDomainLayer
-        ? {
-            [`@${APP_PREFIX}/domain`]: [`${name}/src/app/domain`],
-          }
-        : {}),
-
-      ...(shouldCreateSharedLayer
-        ? {
-            [`@${APP_PREFIX}/shared`]: [`${name}/src/app/shared`],
-          }
-        : {}),
-
-      ...(shouldCreateWidgetLayer
-        ? {
-            [`@${APP_PREFIX}/widget/components`]: [`${name}/src/app/widget/components`],
-            [`@${APP_PREFIX}/widget/directives`]: [`${name}/src/app/widget/directives`],
-            [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
-          }
-        : {}),
+      ...CORE_LAYER,
+      ...DOMAIN_LAYER,
+      ...SHARED_LAYER,
+      ...WIDGET_LAYER,
     };
 
     tsConfig.compilerOptions.strictPropertyInitialization = false;
