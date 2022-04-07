@@ -1,9 +1,11 @@
 {
   "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
+  "extends": ["@schematics/angular"],
   "schematics": {
     "kz-project": {
       "description": "A blank schematic.",
-      "factory": "./kz-project/index#kzProject"
+      "factory": "./kz-project/index#kzProject",
+      "schema": "./kz-project/schema.json"
     }
   }
 }
