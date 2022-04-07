@@ -13,6 +13,8 @@ interface SchemaOptions {
 }
 
 export function main(schemaOptions: SchemaOptions): Rule {
+  console.log("Calling custom schematic");
+
   return (tree: Tree, _context: SchematicContext) => {
     const afterNgNewRule = chain([
       createSassLayer(schemaOptions),

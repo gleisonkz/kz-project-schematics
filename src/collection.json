@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@angular-devkit/schematics/collection-schema.json",
   "extends": ["@schematics/angular"],
   "schematics": {
-    "ngkz": {
+    "ng-new": {
       "description": "A blank schematic.",
       "factory": "./ngkz/index#main",
       "schema": "./ngkz/schema.json"
