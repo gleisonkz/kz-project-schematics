@@ -12,7 +12,7 @@ interface SchemaOptions {
   shouldCreateSharedLayer: boolean;
 }
 
-export function kzProject(schemaOptions: SchemaOptions): Rule {
+export function main(schemaOptions: SchemaOptions): Rule {
   return (tree: Tree, _context: SchematicContext) => {
     const afterNgNewRule = chain([
       createSassLayer(schemaOptions),
