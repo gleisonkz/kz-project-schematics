@@ -60,6 +60,8 @@ function updateTsConfig(name: string): Rule {
       [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
     };
 
+    tsConfig.compilerOptions.strictPropertyInitialization = false;
+
     tree.overwrite(tsConfigPath, JSON.stringify(tsConfig, null, 2));
     return tree;
   };
