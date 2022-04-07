@@ -1,6 +1,6 @@
 {
   "name": "kz-project",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "A blank schematics",
   "scripts": {
     "build": "tsc -p tsconfig.json",

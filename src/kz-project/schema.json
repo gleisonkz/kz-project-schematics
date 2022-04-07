@@ -4,6 +4,7 @@
   "title": "ng new options schema",
   "type": "object",
   "description": "Initialize a new project",
+  "required": ["name"],
   "properties": {
     "name": {
       "type": "string",
