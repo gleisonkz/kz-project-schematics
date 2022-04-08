@@ -1,7 +1,6 @@
-import { strings } from '@angular-devkit/core';
 import {
-    apply, chain, externalSchematic, MergeStrategy, mergeWith, move, Rule, SchematicContext,
-    SchematicsException, template, Tree, url
+    apply, chain, externalSchematic, mergeWith, move, Rule, SchematicContext, SchematicsException,
+    Tree, url
 } from '@angular-devkit/schematics';
 
 interface SchemaOptions {
@@ -13,10 +12,8 @@ interface SchemaOptions {
 }
 
 export function main(schemaOptions: SchemaOptions): Rule {
-  console.log("Calling custom schematic");
-
   return (tree: Tree, _context: SchematicContext) => {
-    const afterNgNewRule = chain([
+    const createLayers = chain([
       createSassLayer(schemaOptions),
       createCoreLayer(schemaOptions),
       createSharedLayer(schemaOptions),
@@ -26,7 +23,7 @@ export function main(schemaOptions: SchemaOptions): Rule {
 
     const rule = chain([
       runNgNewSchematics(schemaOptions),
-      afterNgNewRule,
+      createLayers,
       updateTsConfig(schemaOptions),
     ]);
 
@@ -36,12 +33,8 @@ export function main(schemaOptions: SchemaOptions): Rule {
 
 function createSassLayer({ name }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
-    const templateSource = apply(url("./files/sass"), [
-      template({ ...strings, name }),
-      move(`${name}/src/sass`),
-    ]);
-
-    return mergeWith(templateSource, MergeStrategy.Overwrite);
+    const templateSource = apply(url("./files/sass"), [move(`${name}/src/sass`)]);
+    return mergeWith(templateSource);
   };
 }
 
@@ -65,11 +58,10 @@ function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
     if (shouldCreateWidgetLayer) {
       const templateSource = apply(url("./files/widget"), [
-        template({ ...strings, name }),
         move(`${name}/src/app/widget`),
       ]);
 
-      return mergeWith(templateSource, MergeStrategy.Overwrite);
+      return mergeWith(templateSource);
     }
   };
 }
@@ -78,11 +70,10 @@ function createSharedLayer({ name, shouldCreateSharedLayer }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
     if (shouldCreateSharedLayer) {
       const templateSource = apply(url("./files/shared"), [
-        template({ ...strings, name }),
         move(`${name}/src/app/shared`),
       ]);
 
-      return mergeWith(templateSource, MergeStrategy.Overwrite);
+      return mergeWith(templateSource);
     }
   };
 }
@@ -126,22 +117,22 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
     const APP_PREFIX = angularJson.projects[name].prefix;
 
     const CORE_LAYER = shouldCreateCoreLayer
-      ? { [`@${APP_PREFIX}/core`]: [`${name}/src/app/core`] }
+      ? { [`@${APP_PREFIX}/core`]: [`app/core`] }
       : {};
 
     const DOMAIN_LAYER = shouldCreateDomainLayer
-      ? { [`@${APP_PREFIX}/domain`]: [`${name}/src/app/domain`] }
+      ? { [`@${APP_PREFIX}/domain`]: [`app/domain`] }
       : {};
 
     const SHARED_LAYER = shouldCreateSharedLayer
-      ? { [`@${APP_PREFIX}/shared`]: [`${name}/src/app/shared`] }
+      ? { [`@${APP_PREFIX}/shared`]: [`app/shared`] }
       : {};
 
     const WIDGET_LAYER = shouldCreateWidgetLayer
       ? {
-          [`@${APP_PREFIX}/widget/components`]: [`${name}/src/app/widget/components`],
-          [`@${APP_PREFIX}/widget/directives`]: [`${name}/src/app/widget/directives`],
-          [`@${APP_PREFIX}/widget/pipes`]: [`${name}/src/app/widget/pipes`],
+          [`@${APP_PREFIX}/widget/components`]: [`app/widget/components`],
+          [`@${APP_PREFIX}/widget/directives`]: [`app/widget/directives`],
+          [`@${APP_PREFIX}/widget/pipes`]: [`app/widget/pipes`],
         }
       : {};
 
@@ -154,6 +145,7 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
     };
 
     tsConfig.compilerOptions.strictPropertyInitialization = false;
+    tsConfig.compilerOptions.baseUrl = "src";
 
     tree.overwrite(tsConfigPath, JSON.stringify(tsConfig, null, 2));
 
