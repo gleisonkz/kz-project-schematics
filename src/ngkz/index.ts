@@ -1,6 +1,8 @@
+import { camelize, dasherize } from '@angular-devkit/core/src/utils/strings';
 import {
-    apply, chain, externalSchematic, mergeWith, move, Rule, SchematicContext, SchematicsException,
-    Tree, url
+  apply, chain, externalSchematic, mergeWith, move, Rule, SchematicContext, SchematicsException,
+  template,
+  Tree, url
 } from '@angular-devkit/schematics';
 
 interface SchemaOptions {
@@ -59,6 +61,10 @@ function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
     if (shouldCreateWidgetLayer) {
       const templateSource = apply(url("./files/widget"), [
         move(`${name}/src/app/widget`),
+        template({
+          ...{ name },
+          ...{ dasherize, camelize },
+        })
       ]);
 
       return mergeWith(templateSource);
