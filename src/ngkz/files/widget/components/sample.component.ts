@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: "dmc-alert",
-  templateUrl: "./alert.component.html",
-  styleUrls: ["./alert.component.scss"],
+  selector: "app-sample",
+  templateUrl: "./sample.component.html",
+  styleUrls: ["./sample.component.scss"],
 })
-export class SampleComponent {}
+export class SampleComponent { }
