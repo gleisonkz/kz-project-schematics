@@ -1,6 +1,6 @@
 import { Directive } from '@angular/core';
 
 @Directive({
-  selector: "[<%=dasherize(name)%>-sample]",
+  selector: '[<%=dasherize(prefix)%>-sample]',
 })
-export class SampleDirective { }
+export class SampleDirective {}

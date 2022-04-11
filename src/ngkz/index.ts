@@ -4,8 +4,11 @@ import {
     template, Tree, url
 } from '@angular-devkit/schematics';
 
+import { removeComments } from './utils';
+
 interface SchemaOptions {
   name: string;
+  prefix: string;
   shouldCreateCoreLayer: boolean;
   shouldCreateDomainLayer: boolean;
   shouldCreateWidgetLayer: boolean;
@@ -22,11 +25,7 @@ export function main(schemaOptions: SchemaOptions): Rule {
       createDomainLayer(schemaOptions),
     ]);
 
-    const rule = chain([
-      runNgNewSchematics(schemaOptions),
-      createLayers,
-      updateTsConfig(schemaOptions),
-    ]);
+    const rule = chain([runNgNewSchematics(schemaOptions), createLayers, updateTsConfig(schemaOptions)]);
 
     return rule(tree, _context);
   };
@@ -34,7 +33,7 @@ export function main(schemaOptions: SchemaOptions): Rule {
 
 function createSassLayer({ name }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
-    const templateSource = apply(url("./files/sass"), [move(`${name}/src/sass`)]);
+    const templateSource = apply(url('./files/sass'), [move(`${name}/src/sass`)]);
     return mergeWith(templateSource);
   };
 }
@@ -42,7 +41,7 @@ function createSassLayer({ name }: SchemaOptions) {
 function createCoreLayer({ name, shouldCreateCoreLayer }: SchemaOptions) {
   return (tree: Tree, _context: SchematicContext) => {
     if (shouldCreateCoreLayer) {
-      tree.create(`${name}/src/app/core/.gitkeep`, "");
+      tree.create(`${name}/src/app/core/.gitkeep`, '');
     }
   };
 }
@@ -50,18 +49,19 @@ function createCoreLayer({ name, shouldCreateCoreLayer }: SchemaOptions) {
 function createDomainLayer({ name, shouldCreateDomainLayer }: SchemaOptions) {
   return (tree: Tree, _context: SchematicContext) => {
     if (shouldCreateDomainLayer) {
-      tree.create(`${name}/src/app/domain/.gitkeep`, "");
+      tree.create(`${name}/src/app/domain/.gitkeep`, '');
     }
   };
 }
 
-function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
+function createWidgetLayer({ name, shouldCreateWidgetLayer, prefix }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
     if (shouldCreateWidgetLayer) {
-      const templateSource = apply(url("./files/widget"), [
+      const templateSource = apply(url('./files/widget'), [
         move(`${name}/src/app/widget`),
         template({
           ...{ name },
+          ...{ prefix },
           ...strings,
         }),
       ]);
@@ -74,35 +74,29 @@ function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
 function createSharedLayer({ name, shouldCreateSharedLayer }: SchemaOptions) {
   return (_: Tree, _context: SchematicContext) => {
     if (shouldCreateSharedLayer) {
-      const templateSource = apply(url("./files/shared"), [
-        move(`${name}/src/app/shared`),
-      ]);
+      const templateSource = apply(url('./files/shared'), [move(`${name}/src/app/shared`)]);
 
       return mergeWith(templateSource);
     }
   };
 }
 
-function runNgNewSchematics({ name }: SchemaOptions) {
-  return externalSchematic("@schematics/angular", "ng-new", {
+function runNgNewSchematics({ name, prefix }: SchemaOptions) {
+  return externalSchematic('@schematics/angular', 'ng-new', {
     name,
-    version: "13.3.2",
+    version: '13.3.2',
     directory: name,
     routing: false,
-    style: "scss",
+    style: 'scss',
     inlineStyle: false,
     inlineTemplate: false,
+    prefix,
   });
 }
 
 function updateTsConfig(schemaOptions: SchemaOptions): Rule {
-  const {
-    name,
-    shouldCreateCoreLayer,
-    shouldCreateDomainLayer,
-    shouldCreateSharedLayer,
-    shouldCreateWidgetLayer,
-  } = schemaOptions;
+  const { name, shouldCreateCoreLayer, shouldCreateDomainLayer, shouldCreateSharedLayer, shouldCreateWidgetLayer } =
+    schemaOptions;
   return (tree: Tree, _context: SchematicContext) => {
     const tsConfigPath = `${name}/tsconfig.json`;
     const tsConfigFile = tree.read(tsConfigPath);
@@ -111,20 +105,11 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
 
     const tsConfigWithoutComments = removeComments(tsConfigFile!.toString());
     const tsConfig = JSON.parse(tsConfigWithoutComments);
-    const APP_PREFIX = getProjectPrefix(name, tree);
+    const APP_PREFIX = schemaOptions.prefix;
 
-    const CORE_LAYER = shouldCreateCoreLayer
-      ? { [`@${APP_PREFIX}/core`]: [`app/core`] }
-      : {};
-
-    const DOMAIN_LAYER = shouldCreateDomainLayer
-      ? { [`@${APP_PREFIX}/domain`]: [`app/domain`] }
-      : {};
-
-    const SHARED_LAYER = shouldCreateSharedLayer
-      ? { [`@${APP_PREFIX}/shared`]: [`app/shared`] }
-      : {};
-
+    const CORE_LAYER = shouldCreateCoreLayer ? { [`@${APP_PREFIX}/core`]: [`app/core`] } : {};
+    const DOMAIN_LAYER = shouldCreateDomainLayer ? { [`@${APP_PREFIX}/domain`]: [`app/domain`] } : {};
+    const SHARED_LAYER = shouldCreateSharedLayer ? { [`@${APP_PREFIX}/shared`]: [`app/shared`] } : {};
     const WIDGET_LAYER = shouldCreateWidgetLayer
       ? {
           [`@${APP_PREFIX}/widget/components`]: [`app/widget/components`],
@@ -142,26 +127,10 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
     };
 
     tsConfig.compilerOptions.strictPropertyInitialization = false;
-    tsConfig.compilerOptions.baseUrl = "src";
+    tsConfig.compilerOptions.baseUrl = 'src';
 
     tree.overwrite(tsConfigPath, JSON.stringify(tsConfig, null, 2));
 
     return tree;
   };
-}
-
-function removeComments(string: string) {
-  return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "").trim();
-}
-
-function getProjectPrefix(projectName: string, tree: Tree): string {
-  const angularJsonPath = `${projectName}/angular.json`;
-  const angularJsonFile = tree.read(angularJsonPath);
-
-  if (!angularJsonFile)
-    throw new SchematicsException(`Could not find ${angularJsonPath}`);
-
-  const angularJson = JSON.parse(angularJsonFile!.toString());
-  const appPrefix = angularJson.projects[projectName].prefix;
-  return appPrefix;
 }

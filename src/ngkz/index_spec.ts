@@ -41,7 +41,7 @@ describe('ng-new', () => {
             expect(widgetFolder).toBeDefined();
             expect(widgetFolder.subdirs.length).toEqual(3);
 
-            expect(tree.files.length).toEqual(46);
+            expect(tree.files.length).toEqual(45);
           });
       });
 
@@ -55,7 +55,10 @@ describe('ng-new', () => {
             const sampleDirectiveFolder = tree.getDir(`${BASE_DIRECTIVE_FOLDER_PATH}/sample`);
 
             expect(sampleDirectiveFolder).toBeDefined();
-            expect(sampleDirectiveFolder.subfiles.length).toEqual(3);
+
+            expect(sampleDirectiveFolder.subfiles.length)
+              .withContext('should have 3 files for sample directive')
+              .toEqual(3);
 
             const sampleDirectiveFile = tree.get(`${BASE_DIRECTIVE_FOLDER_PATH}/sample/sample.directive.ts`);
 
@@ -63,8 +66,37 @@ describe('ng-new', () => {
               `${BASE_DIRECTIVE_FOLDER_PATH}/sample/sample.directive.module.ts`
             );
 
+            const indexTsFile = tree.get(`${BASE_DIRECTIVE_FOLDER_PATH}/sample/index.ts`);
+
             expect(sampleDirectiveFile).toBeDefined();
             expect(sampleDirectiveWidgetModule).toBeDefined();
+            expect(indexTsFile).toBeDefined();
+          });
+      });
+
+      it('should have a sample component inside widget layer folder', async () => {
+        const runner = new SchematicTestRunner('schematics', collectionPath);
+
+        runner
+          .runSchematicAsync('ng-new', { name: 'any-name', shouldCreateWidgetLayer: true }, Tree.empty())
+          .subscribe((tree) => {
+            const BASE_COMPONENT_FOLDER_PATH = 'any-name/src/app/widget/components';
+            const sampleComponentFolder = tree.getDir(`${BASE_COMPONENT_FOLDER_PATH}/sample`);
+
+            expect(sampleComponentFolder).toBeDefined();
+
+            expect(sampleComponentFolder.subfiles.length)
+              .withContext('should have 6 files for sample component')
+              .toEqual(6);
+
+            const sampleComponentFile = tree.get(`${BASE_COMPONENT_FOLDER_PATH}/sample/sample.component.ts`);
+
+            const sampleComponentWidgetModule = tree.get(
+              `${BASE_COMPONENT_FOLDER_PATH}/sample/sample.component.module.ts`
+            );
+
+            expect(sampleComponentFile).toBeDefined();
+            expect(sampleComponentWidgetModule).toBeDefined();
           });
       });
     });
@@ -130,9 +162,9 @@ describe('ng-new', () => {
           expect(sharedFolder.subdirs.length).toEqual(4);
 
           expect(widgetFolder).toBeDefined();
-          expect(widgetFolder.subdirs.length).toEqual(3);
+          expect(widgetFolder.subdirs.length).withContext('should have 3 subdirs for widget layer').toEqual(3);
 
-          expect(tree.files.length).toEqual(52);
+          expect(tree.files.length).toEqual(51);
         });
     });
 
@@ -243,14 +275,14 @@ describe('ng-new', () => {
 
           const pathKeys = Object.keys(tsConfigJson.compilerOptions.paths);
 
-          expect(pathKeys.length).toEqual(3);
+          expect(pathKeys.length).toEqual(3, 'should have 3 path keys');
           expect(tsConfigJson.compilerOptions.paths['@app/widget/components']).toEqual(['app/widget/components']);
           expect(tsConfigJson.compilerOptions.paths['@app/widget/directives']).toEqual(['app/widget/directives']);
           expect(tsConfigJson.compilerOptions.paths['@app/widget/pipes']).toEqual(['app/widget/pipes']);
         });
     });
 
-    it('should have path mapping configured with project prefix', async () => {
+    it('should have path mapping configured with default project prefix (app)', async () => {
       const runner = new SchematicTestRunner('schematics', collectionPath);
 
       runner
@@ -281,6 +313,41 @@ describe('ng-new', () => {
           expect(tsConfigJson.compilerOptions.paths['@app/widget/components']).toEqual(['app/widget/components']);
           expect(tsConfigJson.compilerOptions.paths['@app/widget/directives']).toEqual(['app/widget/directives']);
           expect(tsConfigJson.compilerOptions.paths['@app/widget/pipes']).toEqual(['app/widget/pipes']);
+        });
+    });
+
+    it('should have path mapping configured with provided prefix', async () => {
+      const runner = new SchematicTestRunner('schematics', collectionPath);
+
+      runner
+        .runSchematicAsync(
+          'ng-new',
+          {
+            name: 'any-name',
+            shouldCreateCoreLayer: true,
+            shouldCreateDomainLayer: true,
+            shouldCreateSharedLayer: true,
+            shouldCreateWidgetLayer: true,
+            prefix: 'sp',
+          },
+          Tree.empty()
+        )
+        .subscribe((tree) => {
+          const tsConfig = tree.read('any-name/tsconfig.json');
+
+          if (!tsConfig) throw new Error('tsconfig.json not found');
+          const tsConfigJson = JSON.parse(tsConfig.toString());
+
+          const pathKeys = Object.keys(tsConfigJson.compilerOptions.paths);
+
+          expect(pathKeys.length).toEqual(6);
+
+          expect(tsConfigJson.compilerOptions.paths['@sp/core']).toEqual(['app/core']);
+          expect(tsConfigJson.compilerOptions.paths['@sp/domain']).toEqual(['app/domain']);
+          expect(tsConfigJson.compilerOptions.paths['@sp/shared']).toEqual(['app/shared']);
+          expect(tsConfigJson.compilerOptions.paths['@sp/widget/components']).toEqual(['app/widget/components']);
+          expect(tsConfigJson.compilerOptions.paths['@sp/widget/directives']).toEqual(['app/widget/directives']);
+          expect(tsConfigJson.compilerOptions.paths['@sp/widget/pipes']).toEqual(['app/widget/pipes']);
         });
     });
   });

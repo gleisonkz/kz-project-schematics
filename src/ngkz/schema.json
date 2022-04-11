@@ -9,10 +9,20 @@
     "name": {
       "type": "string",
       "description": "The name of the project",
-      "x-prompt": "Name:",
+      "x-prompt": "What do you want to call your project?",
       "$default": {
         "$source": "argv",
         "index": 0
+      }
+    },
+    "prefix": {
+      "type": "string",
+      "description": "Project prefix",
+      "x-prompt": "What should be the prefix of the project",
+      "default": "app",
+      "$default": {
+        "$source": "argv",
+        "index": 1
       }
     },
     "shouldCreateCoreLayer": {
