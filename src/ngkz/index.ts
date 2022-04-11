@@ -1,8 +1,7 @@
-import { camelize, dasherize } from '@angular-devkit/core/src/utils/strings';
+import { strings } from '@angular-devkit/core';
 import {
-  apply, chain, externalSchematic, mergeWith, move, Rule, SchematicContext, SchematicsException,
-  template,
-  Tree, url
+    apply, chain, externalSchematic, mergeWith, move, Rule, SchematicContext, SchematicsException,
+    template, Tree, url
 } from '@angular-devkit/schematics';
 
 interface SchemaOptions {
@@ -63,8 +62,8 @@ function createWidgetLayer({ name, shouldCreateWidgetLayer }: SchemaOptions) {
         move(`${name}/src/app/widget`),
         template({
           ...{ name },
-          ...{ dasherize, camelize },
-        })
+          ...strings,
+        }),
       ]);
 
       return mergeWith(templateSource);
@@ -112,15 +111,7 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
 
     const tsConfigWithoutComments = removeComments(tsConfigFile!.toString());
     const tsConfig = JSON.parse(tsConfigWithoutComments);
-
-    const angularJsonPath = `${name}/angular.json`;
-    const angularJsonFile = tree.read(angularJsonPath);
-
-    if (!angularJsonFile)
-      throw new SchematicsException(`Could not find ${angularJsonPath}`);
-
-    const angularJson = JSON.parse(angularJsonFile!.toString());
-    const APP_PREFIX = angularJson.projects[name].prefix;
+    const APP_PREFIX = getProjectPrefix(name, tree);
 
     const CORE_LAYER = shouldCreateCoreLayer
       ? { [`@${APP_PREFIX}/core`]: [`app/core`] }
@@ -161,4 +152,16 @@ function updateTsConfig(schemaOptions: SchemaOptions): Rule {
 
 function removeComments(string: string) {
   return string.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, "").trim();
+}
+
+function getProjectPrefix(projectName: string, tree: Tree): string {
+  const angularJsonPath = `${projectName}/angular.json`;
+  const angularJsonFile = tree.read(angularJsonPath);
+
+  if (!angularJsonFile)
+    throw new SchematicsException(`Could not find ${angularJsonPath}`);
+
+  const angularJson = JSON.parse(angularJsonFile!.toString());
+  const appPrefix = angularJson.projects[projectName].prefix;
+  return appPrefix;
 }
